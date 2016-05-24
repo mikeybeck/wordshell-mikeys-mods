@@ -1,15 +1,20 @@
 #!/bin/bash
 # Note - if you change that path to bash, then you should also change it in the configuration section below
 
-VERSION="1.3.132 (2015-09-24)"
+VERSION="1.3.133 (2016-05-17)"
 
 # (c) David Anderson 2011-
+# With modifications by mikeybeck (2016)
 #
 # http://wordshell.net / contact@wordshell.net
 #
 # Licence: http://wordshell.net/support/manual/wordshell-licence/
 #
 # Please do share your patches with me. I prefer then in "diff -uNr" format (please also specify the version against which you are patching).
+
+# mikeybeck's mods:
+# 05/16: Addition of --no-maintenance mode, which prevents site from going into maintenance mode when updating plugins.  (not recommended but y'know...)
+
 
 # * * * BEGIN CONFIGURATION * * * #
 
@@ -80,7 +85,7 @@ MD5CHECKSUM_TRY="md5sum"
 WORKDIR="$HOME/.wordshell"
 CONFIGFILE="$WORKDIR/rc"
 
-WORKDIR=".wordshell"
+WORKDIR=".wordshell" #This makes Mikey's Wordshell installation work
 CONFIGFILE="$WORKDIR/rc"
 
 
@@ -96,7 +101,7 @@ EXCLUDE_GLOB_FTP="wponlinebackup/tmp/*"
 EXCLUDE_GLOB_RSYNC="wponlinebackup/tmp/*"
 
 # Where to fetch a wp-wordshell-controller.php script of sufficiently high protocol from
-REMOTE_MANAGER_MINIMUM_PROTOCOL=20
+REMOTE_MANAGER_MINIMUM_PROTOCOL=21
 REMOTE_MANAGER_FROM="https://wordshellnet.s3.amazonaws.com/wp-wordshell-controller.php.$REMOTE_MANAGER_MINIMUM_PROTOCOL"
 
 SELINUX=0
@@ -290,7 +295,7 @@ Usage: wordshell [<site-name>|all] [<plugin|theme|file|all>] (options)
 
 Site names are aliases for sites whose fuller details are stored in the configuration file. If you enter an unknown site name, you will be requested for the site details and these will be added to the configuration file. You can specify multiple sites, separating them with commas.
 
-If you enter the site name 'all', then all sites that are in the configuration file will be processed (e.g. wordshell all --listupdates).
+If you enter the site name 'all', then all sites that are in the configuration file will be processed in alphabetical (e.g. wordshell all --listupdates). Add --reverse to do them in reverse order (or --random for random order, where supported).
 
 If you enter the plugin/theme as 'all', then all the plugins/themes on the indicated site are processed (e.g. wordshell mysite all --update --latest)
 
@@ -323,6 +328,7 @@ ${BOLD}Modes for performing plugin/theme/core operations (mostly mutually exclus
 --rollback          :	Roll back to the most recently replaced version. If you optionally specify a time, then this will instead then automatically select the version of the plugin installed at that time, as far as we know. If you have GNU date (coreutils) installed, then any string supported by the 'date' command can be used here; e.g. --time='last Tuesday', --time='10 days ago', --time='24 Feb'. Otherwise, you must supply an epoch time. Use --listrollbacks to see what is available.
 --restore           :	Restores the current copy of the indicated entities. This differs from --rollback in that it restores the believed-to-be-current version from our local cache/backup (rather than any previously replaced version). This implies --cache --cache (as otherwise, if the site has been damaged, we would first replicate that damage to the local cache) and then you'd need to head to your backups). In fact, we assume that your site is damaged, and drop all sanity checks related to the currently installed entity and the backup you are replacing it from. With an undamaged site and up-to-date cache, --restore should result in no real changes. When operating upon core, this will restore whatever you backed up (see --justwp). If you wish to restore the backup to a different location (i.e. not the site's regular home), then supply a parameter, e.g. --restore=/var/www/newlocation (accepts both file paths and FTP/SFTP URLs - specify the path for the WordPress base; do not include wp-content/plugins etc.).
 --update            :	Upgrade mode (this is the default if no other mode is specified; you only need to specify it manually if combining with --activate (--activate without --update does not perform a plugin update)). --upgrade is a synonym.
+--no-maintenance    :   Don't put site into maintenance mode when updating plugins (not recommended but minimizes downtime)
 
 ${BOLD}Database operations (--database)${OFFBOLD}:
 
@@ -595,6 +601,7 @@ USER_EMAIL=""
 USER_ROLE=""
 FAST=0
 PHPLINT=1
+SORTORDER=0
 CALCULATE_CHECKSUM=1
 ALREADY_LINTED=0
 NETWORK_PLUGIN=0
@@ -684,6 +691,8 @@ function parse_option() {
 	elif [ "$i" = "--novaliditywarnings" ]; then VALIDITYWARNINGS=0
 	elif [[ $i = "--delete" || $i = "--del" ]]; then mode_switch "delete"
 	elif [ "$i" = "--showdiskspace" ]; then SHOWDISKSPACE=1
+	elif [ "$i" = "--reverse" ]; then SORTORDER=1
+	elif [ "$i" = "--random" ]; then SORTORDER=2
 	elif [ "$i" = "--passwordreset" ]; then mode_switch "passwordreset"
 	elif [ "$i" = "--nocountdiskspace" ]; then SHOWDISKSPACE=0
 	elif [ "$i" = "--donotrequirenew" ]; then REQUIRENEWVERSION=0
@@ -727,13 +736,13 @@ function parse_option() {
 	elif [ "${i:0:10}" = "--workdir=" ]; then WORKDIR=${i:10}
 	elif [[ $i = "--editconfig" || $i = "--editrc" ]]; then mode_switch editconfig
 	elif [ "$i" = "--showlog" ]; then mode_switch showlog
-	elif [ "$i" = "--noelinks" ]; then ELINKS="false"
-	elif [ "$i" = "--nolynx" ]; then LYNX="false"
-	elif [ "$i" = "--now3m" ]; then W3M="false"
-	elif [ "$i" = "--nocurl" ]; then CURL="false"
-	elif [ "$i" = "--nolftp" ]; then LFTP="false"
-	elif [ "$i" = "--norsync" ]; then RSYNC="false"
-	elif [ "$i" = "--nowget" ]; then WGET="false"
+	elif [ "$i" = "--noelinks" ]; then ELINKS=""
+	elif [ "$i" = "--nolynx" ]; then LYNX=""
+	elif [ "$i" = "--now3m" ]; then W3M=""
+	elif [ "$i" = "--nocurl" ]; then CURL=""
+	elif [ "$i" = "--nolftp" ]; then LFTP=""
+	elif [ "$i" = "--norsync" ]; then RSYNC=""
+	elif [ "$i" = "--nowget" ]; then WGET=""
 	elif [ "$i" = "--nositetest" ]; then DOSITETEST=0
 	elif [[ $i = "--ignorenamechange" ]]; then IGNORENAMECHANGE=1
 	elif [[ $i = "--ignoremodifications" ]]; then IGNOREMODIFICATIONS=1
@@ -3563,7 +3572,7 @@ function rpc_mirror_get() {
 					[[ $DEBUG -ge 1 ]] && ws_event_info "$LMIRROR_DIR/$LFILE_NAME out of date: will fetch"
 					remotecli_process "getfile:$LFILE_NAME" tellfile
 					local LDIR_TMP=$REMOTECLI_OUTPUT
-					local GET_ANS="`dd if=$LDIR_TMP bs=15 count=1 of=/dev/stdout 2>/dev/null`"
+					local GET_ANS='`dd if=$LDIR_TMP bs=15 count=1 of=/dev/stdout 2>/dev/null`' #Single quotes here so sublime text higlighting doesn't break
 					if [[ $GET_ANS = "AUTHOK:CANTREAD" ]]; then
 						ws_event_warning "$SITE: $LINE: Could not download file (error: file not readable)"
 						rm -f $LDIR_TMP
@@ -4214,7 +4223,10 @@ function site_reinvoke() {
 	# Input: $1 = regex to use to locate the lists of sites from the configuration file
 	local FREGEX=$1
 	[[ $DEBUG -ge 1 ]] && ws_event_info "Intending to reinvoke for sites found in configuration using regex: $FREGEX"
-	for SITE2 in `grep "$FREGEX" $CONFIGFILE | cut -d\# -f2 | sort`; do
+	local SORT="sort"
+	[[ $SORTORDER -eq 1 ]] && SORT="sort -r"
+	[[ $SORTORDER -eq 2 ]] && SORT="sort -R"
+	for SITE2 in `grep "$FREGEX" $CONFIGFILE | cut -d\# -f2 | $SORT`; do
 
 		[[ "$MODE" != "list" && "$MODE" != "listrollbacks" && "$MODE" != "deleterollbacks" && $MODE != "maintenancestate" && ( $METAMODE != "core" || $MODE != "checkmodifications" ) ]] && echo "${BOLD}Site:${OFFBOLD} $SITE2"
 		# Invoke whether or not a zip presently exists in the cache - the cache may be out of date
