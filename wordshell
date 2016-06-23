@@ -1,7 +1,7 @@
 #!/bin/bash
 # Note - if you change that path to bash, then you should also change it in the configuration section below
 
-VERSION="1.3.133 (2016-05-17)"
+VERSION="1.3.135 (2016-06-09)"
 
 # (c) David Anderson 2011-
 # With modifications by mikeybeck (2016)
@@ -14,6 +14,7 @@ VERSION="1.3.133 (2016-05-17)"
 
 # mikeybeck's mods:
 # 05/16: Addition of --no-maintenance mode, which prevents site from going into maintenance mode when updating plugins.  (not recommended but y'know...)
+# 06/16: Made remote controller local only so I can make changes (no longer fetches from Amazon s3)
 
 
 # * * * BEGIN CONFIGURATION * * * #
@@ -85,7 +86,7 @@ MD5CHECKSUM_TRY="md5sum"
 WORKDIR="$HOME/.wordshell"
 CONFIGFILE="$WORKDIR/rc"
 
-WORKDIR=".wordshell" #This makes Mikey's Wordshell installation work
+WORKDIR="/vagrant/.wordshell" #This makes Mikey's Wordshell installation work
 CONFIGFILE="$WORKDIR/rc"
 
 
@@ -101,8 +102,9 @@ EXCLUDE_GLOB_FTP="wponlinebackup/tmp/*"
 EXCLUDE_GLOB_RSYNC="wponlinebackup/tmp/*"
 
 # Where to fetch a wp-wordshell-controller.php script of sufficiently high protocol from
-REMOTE_MANAGER_MINIMUM_PROTOCOL=21
-REMOTE_MANAGER_FROM="https://wordshellnet.s3.amazonaws.com/wp-wordshell-controller.php.$REMOTE_MANAGER_MINIMUM_PROTOCOL"
+REMOTE_MANAGER_MINIMUM_PROTOCOL=22
+#REMOTE_MANAGER_FROM="https://wordshellnet.s3.amazonaws.com/wp-wordshell-controller.php.$REMOTE_MANAGER_MINIMUM_PROTOCOL"
+REMOTE_MANAGER_FROM="$WORKDIR/wp-wordshell-controller.php"
 
 SELINUX=0
 [[ $UNAME = "Linux" ]] && selinuxenabled 2>/dev/null && SELINUX=1
@@ -3738,6 +3740,7 @@ function ftp_mirror() {
 				rpc_mirror_get "$RDIR" "$RMIRROR_DIR" "$LMIRROR_DIR"
 			fi
 		fi
+
 	elif [[ $MIRRORMODE = "get-delsource" ]]; then
 		if [[ -n $LFTP ]]; then
 			[[ $DEBUG -ge 1 ]] && ws_event_info "ftp_mirror get-delsource lftp: $2 $3 $4 $5"
@@ -4652,7 +4655,7 @@ function siteurl_test() {
 		[[ $DEBUG -ge 1 ]] && ws_event_debug "Testing presence of WP site by looking for $SITEURL/wp-login.php"
 		url_get "$SITEURL/wp-login.php" stdout >$TMPTEST
 		if [[ $? -eq 0 && -s $TMPTEST ]]; then
-			head -10 $TMPTEST | grep -qi "/wp-admin" && SITEURL_FOUND=1
+			head -20 $TMPTEST | grep -qi "/wp-admin" && SITEURL_FOUND=1
 		fi
 	fi
 	rm -f $TMPTEST
@@ -5458,7 +5461,7 @@ if [[ $METAMODE = "database" && $MODE = "searchandreplace" ]]; then
 	cd ../..
 	echo -n "${BOLD}Search and replacing${OFFBOLD} (wait, do not abort): "
 	if [[ -z $TABLELIST ]]; then
-		remotecli_process "dbsearchreplace:$SEARCHANDREPLACE_SEARCH^$SEARCHANDREPLACE_REPLACE" setvar
+		remotecli_process "dbsearchreplace:$SEARCHANDREPLACE_SEARCH^$SEARCHANDREPLACE_REPLACE:" setvar
 	else
 		remotecli_process "dbsearchreplace:$SEARCHANDREPLACE_SEARCH^$SEARCHANDREPLACE_REPLACE:$TABLELIST" setvar
 	fi
@@ -5777,6 +5780,7 @@ function show_theentities() {
 		for i in `find . -maxdepth 1 -iregex './[a-z0-9].*' | sort`; do
 			# This could match the directory name (e.g. "akismet" from plugin akismet/akismet.php) or the file name (e.g. hello.php for "Hello Dolly")
 			PLUGDIR=`echo "$i" | cut -d/ -f2`
+
 			# Plugins in directories
 			if [[ -d $i ]]; then
 				# Enter the plugin's directory
@@ -5945,6 +5949,9 @@ while [[ ( -z $PLUGIN || ! -e "$PLUGIN" ) && $MODE != "install" && $PLUGIN_OR_TH
 	fi
 	if [ $HAVESHOWNPLUGS -eq 0 ]; then
 		echo "${METAMODE_CAP}s in use on this site:"
+
+		#TODO: Get number of directories in local plugin folder and show progress bar after each plugin is checked
+
 		show_theentities
 		HAVESHOWNPLUGS=1
 	fi
@@ -6817,7 +6824,7 @@ if [[ $DRYRUN -eq 0 && ( $MODE = "normal" || $MODE = "install" || $MODE = "resto
 			ws_event_error "Upgrade failed: Error returned was: `tail -n +2 $REMOTECLI_OUTPUT`"
 			ws_event_error "One common cause is that your files are not owned by the same user as runs PHP. You could re-try using the switch --filemethod"
 		elif [[ $FIRSTLINE =~ ^AUTHOK:UPTODATE ]]; then
-			echo "OK: Already at that version"
+			echo "OK: Already at that version (or, the check to wordpress.org did not find a later version)"
 			[[ $DEBUG -ge 1 ]] && ws_event_info "Remote side returned: `cat $REMOTECLI_OUTPUT`"
 		elif [[ $FIRSTLINE =~ ^AUTHOK:UPDATED ]]; then
 			echo "OK"
