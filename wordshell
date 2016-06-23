@@ -1,7 +1,7 @@
 #!/bin/bash
 # Note - if you change that path to bash, then you should also change it in the configuration section below
 
-VERSION="1.3.135 (2016-06-09)"
+VERSION="1.3.136 (2016-06-18)"
 
 # (c) David Anderson 2011-
 # With modifications by mikeybeck (2016)
@@ -330,7 +330,6 @@ ${BOLD}Modes for performing plugin/theme/core operations (mostly mutually exclus
 --rollback          :	Roll back to the most recently replaced version. If you optionally specify a time, then this will instead then automatically select the version of the plugin installed at that time, as far as we know. If you have GNU date (coreutils) installed, then any string supported by the 'date' command can be used here; e.g. --time='last Tuesday', --time='10 days ago', --time='24 Feb'. Otherwise, you must supply an epoch time. Use --listrollbacks to see what is available.
 --restore           :	Restores the current copy of the indicated entities. This differs from --rollback in that it restores the believed-to-be-current version from our local cache/backup (rather than any previously replaced version). This implies --cache --cache (as otherwise, if the site has been damaged, we would first replicate that damage to the local cache) and then you'd need to head to your backups). In fact, we assume that your site is damaged, and drop all sanity checks related to the currently installed entity and the backup you are replacing it from. With an undamaged site and up-to-date cache, --restore should result in no real changes. When operating upon core, this will restore whatever you backed up (see --justwp). If you wish to restore the backup to a different location (i.e. not the site's regular home), then supply a parameter, e.g. --restore=/var/www/newlocation (accepts both file paths and FTP/SFTP URLs - specify the path for the WordPress base; do not include wp-content/plugins etc.).
 --update            :	Upgrade mode (this is the default if no other mode is specified; you only need to specify it manually if combining with --activate (--activate without --update does not perform a plugin update)). --upgrade is a synonym.
---no-maintenance    :   Don't put site into maintenance mode when updating plugins (not recommended but minimizes downtime)
 
 ${BOLD}Database operations (--database)${OFFBOLD}:
 
@@ -469,6 +468,11 @@ wordshell mysite,@mygroup,-site2,-@group2,site3 --listsites
 The above command would include the site mysite, then the sites in group mygroup, then remove site2 and all sites in group2, and finally add in site3.
 
 The default working directory is $WORKDIR and the default configuration file is $CONFIGFILE.
+
+${BOLD}Extra options added by mikeybeck:${OFFBOLD}
+--no-maintenance    :	Prevents WordPress going into maintenance mode [when plugin/theme is being updated].  (NOT RECOMMENDED, but y'know...')
+--removecontroller  :	Deletes remote wp-wordshell-controller.php file.
+--filefindmode      :	Searches for remote filenames using regex (e.g. --filefindmode=.*txt to find all filenames containing 'txt', or --findfilemode=.*\.log to find all .log files)
 "
 exit 0;
 fi
@@ -749,7 +753,11 @@ function parse_option() {
 	elif [[ $i = "--ignorenamechange" ]]; then IGNORENAMECHANGE=1
 	elif [[ $i = "--ignoremodifications" ]]; then IGNOREMODIFICATIONS=1
 	elif [ "$i" = "--lftpdryrun" ]; then LFTPDRYRUN=1
+	# Below options added by mikeybeck
 	elif [ "$i" = "--no-maintenance" ]; then NOMAINTENANCE=1
+	elif [ "$i" = "--removecontroller" ]; then mode_switch "removecontroller"
+	elif [[ $i =~ ^--filefindmode=(.*)$ ]]; then mode_switch "filefindmode"; FILEFINDREGEX=${BASH_REMATCH[1]};
+#	elif [ "$i" = "--testingmode" ]; then mode_switch "testingmode"
 	elif [ -n "$i" ]; then options_abort "Unknown option: $i"
 	#else echo "???: $i"
 	fi
@@ -860,6 +868,15 @@ fi
 ORIGDIR=`pwd -P` || exit 71
 ws_cd "$WORKDIR" || abort_die 26 "Could not enter working directory ($WORKDIR)"
 WORKINGDIR_FULL=`pwd`
+
+function get_file_size() {
+	local FILE=$1
+	if [[ $UNAME = "Linux" || $UNAME =~ ^Cygwin || $UNAME =~ ^CYGWIN ]]; then
+		stat -c %s "$FILE"
+	else
+		stat -f %z "$FILE"
+	fi
+}
 
 function show_more_less() {
 	local DIFFTMP=$1
@@ -3156,6 +3173,7 @@ if [[ $MODE = "downloadonly" && ( $METAMODE = "core" || $METAMODE = "plugin" || 
 	exit $?
 fi
 
+
 function download_remote_manager() {
 	# Purpose: make sure remote manager script is in place at the required minimum protocol version
 	# Input: $1: Minimum protocol version
@@ -3199,6 +3217,7 @@ function setup_remote_manager() {
 	# $2 = flags:
 	#   nononce means do not return a nonce (no call is going to be made); simply make sure we are set up
 	#   earlyping means to use the 'earlyping' RPC instead of ping; does not require WordPress to be alive; you should also always specify nononce with this since the remote end will not be able to update its own nonces
+	#   purgecontroller means to delete entire contents of file - added by mikeybeck - REMOVED/UPDATED
 	# Returns 0 upon success, othersize non-zero; also sets the next valid REMOTEMANAGER_NONCE (this is the one to put in wpm-a), REMOTEMANAGER_KEY, SITEURL_HOST and SITEURL_LOCAL and otthers used internally: REMOTEMANAGER_COUNTER, REMOTEMANAGER_UPLOADTIME
 	# Sets GET_REMOTE_MESSAGE if there was a problem
 	local SETUP_RM_FLAGS=$2
@@ -3211,6 +3230,7 @@ function setup_remote_manager() {
 		fi
 		return 0
 	fi
+
 	local REMOTE_MINVER=$1
 	GET_REMOTE_MESSAGE=""
 	if [[ -z $SITEURL ]]; then
@@ -3230,6 +3250,7 @@ function setup_remote_manager() {
 	make_and_enter tmp
 	local CONTROL_TMP=`mktemp ctrl-tmp-php.XXXXX` || return 5
 	REMOTEMANAGER_KEY="${RANDOM}${RANDOM}${RANDOM}"
+
 	echo "<?php \$our_auth = \"$REMOTEMANAGER_KEY\"; ?>" >$CONTROL_TMP
 	if [[ $ACCESSMETHOD =~ ftp ]]; then
 		echo "<?php define('WORDSHELL_FTP_USER', '$FTPUSER');" >>$CONTROL_TMP
@@ -3237,7 +3258,16 @@ function setup_remote_manager() {
 		echo "define('WORDSHELL_FTP_PASS', '$QUOTPASS');" >>$CONTROL_TMP
 		echo "define('WORDSHELL_FTP_HOST', '$FTPHOST'); ?>" >>$CONTROL_TMP
 	fi
-	cat ../wp-wordshell-controller.php >>$CONTROL_TMP
+
+	#if [[ $SETUP_RM_FLAGS =~ purgecontroller ]]; then
+	#	echo "purging..."
+#		echo "" > $CONTROL_TMP
+#	else
+		cat ../wp-wordshell-controller.php >>$CONTROL_TMP
+#	fi
+
+
+	
 	if [[ $ACCESSMETHOD = "file" ]]; then
 		[[ $DEBUG -ge 1 ]] && ws_event_info "Copy across remote controller (filesystem)"
 		cp $COPYOPT $CONTROL_TMP "$FILEDIR/wp-wordshell-controller.php"
@@ -3298,10 +3328,10 @@ function setup_remote_manager() {
 			GET_REMOTE_MESSAGE="ERROR: The remote protocol version ($REMOTE_FOUNDVER) was NOT high enough (at least $REMOTE_MINVER)"
 			return 9
 		fi
-		[[ $URLPOST_RESULTS =~ AUTHOK:PONG:[0-9]+:([\.0-9]+): ]] && REMOTE_PHPVERSION=${BASH_REMATCH[1]}
-		[[ $URLPOST_RESULTS =~ AUTHOK:PONG:[0-9]+:[\.0-9]+:w([\.0-9]+)[,:] ]] && REMOTE_WPVERSION=${BASH_REMATCH[1]}
-		[[ $URLPOST_RESULTS =~ AUTHOK:PONG:[0-9]+:[\.0-9]+:w[\.0-9]+,m([\.0-9]+): ]] && REMOTE_MYSQLVERSION=${BASH_REMATCH[1]}
-		[[ $URLPOST_RESULTS =~ AUTHOK:PONG:[0-9]+:[\.0-9]+:[^:]+,wpcd=([-_a-zA-Z0-9]+): ]] && REMOTE_CONTENTDIR=${BASH_REMATCH[1]}
+		[[ $URLPOST_RESULTS =~ AUTHOK:PONG:[0-9]+:([-\.0-9a-z]+): ]] && REMOTE_PHPVERSION=${BASH_REMATCH[1]}
+		[[ $URLPOST_RESULTS =~ AUTHOK:PONG:[0-9]+:[-\.0-9a-z]+:w([\.0-9]+)[,:] ]] && REMOTE_WPVERSION=${BASH_REMATCH[1]}
+		[[ $URLPOST_RESULTS =~ AUTHOK:PONG:[0-9]+:[-\.0-9a-z]+:w[\.0-9]+,m([\.0-9]+): ]] && REMOTE_MYSQLVERSION=${BASH_REMATCH[1]}
+		[[ $URLPOST_RESULTS =~ AUTHOK:PONG:[0-9]+:[-\.0-9a-z]+:[^:]+,wpcd=([-_a-zA-Z0-9]+): ]] && REMOTE_CONTENTDIR=${BASH_REMATCH[1]}
 
 	else
 		GET_REMOTE_MESSAGE="ERROR: Remote controller returned unexpected result ($URLPOST_RESULTS) - try --debug or --debug --debug for more information"
@@ -3316,6 +3346,8 @@ function setup_remote_manager() {
 	fi
 	return 0
 }
+
+
 
 # Remote CLI mode
 function remotecli_process() {
@@ -4216,6 +4248,9 @@ if [[ $MODE = "listsites" ]]; then
 	exit
 fi
 
+
+
+
 function show_disk_space() {
 	echo -n "${BOLD}Disk space in use ($WORKDIR):${OFFBOLD} "
 	# -h is not in POSIX, but is in GNU, Net/FreeBSD and Max OS X at least
@@ -5061,6 +5096,75 @@ fi
 
 # Setup finished: now we have the site and its access details, and they are sanity-checked; we can start processing most modes
 
+
+
+
+
+
+
+
+################################################
+#
+# Stuff added by mikeybeck
+#
+################################################
+
+
+
+
+function remotecmd() {
+	# 
+	#local LISTOFFILES=$1
+	[[ $DEBUG -ge 1 ]] && ws_event_info "Remote cmd = filefind:$1"
+	#if [[ -n $DELTHISFILE ]]; then
+		remotecli_process "filefind:$1"
+		#if [[ $REMOTECLI_OUTPUT =~ :DELETED: ]]; then
+		#	[[ $DEBUG -ge 2 ]] && ws_event_info "Successfully deleted file: $DELTHISFILE"
+		#else
+		#	[[ $DEBUG -ge 1 ]] && ws_event_warning "Tried to delete file $DELTHISFILE, but failed (output was: $REMOTECLI_OUTPUT)"
+		#fi
+	#fi
+}
+
+# Testing remote.  Added by mikeybeck
+if [[ $MODE = "filefindmode" ]]; then
+				echo "Searching $SITEURL for files"
+				echo  "Using regex /$FILEFINDREGEX/"
+#				echo $TESTINGMODEPARAM
+#				exit
+				#SITE=${SITES[1]}
+                # .*txt would find all txt files
+				remotecmd $FILEFINDREGEX
+				exit
+fi
+
+# Delete remote wp controller.  Added by mikeybeck
+if [[ $MODE = "removecontroller" ]]; then
+				ftp_deletefile 'wp-wordshell-controller.php'
+				echo "Remote wp-wordshell-controller.php file deleted!"
+				#setup_remote_manager $REMOTE_MANAGER_MINIMUM_PROTOCOL purgecontroller
+				exit
+fi
+
+
+
+
+
+################################################
+#
+# END of stuff added by mikeybeck
+#
+################################################
+
+
+
+
+
+
+
+
+
+
 # Apply the filters from --fast (exit if nothing to do) (these are never set with --core)
 if [[ ( $MODE = "delete" || $MODE = "normal" || $MODE = "restore" || $MODE = "rollback" || $MODE = "list" || $MODE = "checkmodifications" ) && ( $FAST -eq 1 ) ]]; then
 	if [[ ! -e "$WORKINGDIR_FULL/current/$SITE/$METAMODE_DIR/$PLUGIN" ]]; then
@@ -5068,6 +5172,11 @@ if [[ ( $MODE = "delete" || $MODE = "normal" || $MODE = "restore" || $MODE = "ro
 		exit
 	fi
 fi
+
+
+
+
+
 
 # Maintenance mode
 if [[ $MODE = "entermaintenance" ]]; then
@@ -5243,7 +5352,10 @@ function sync_core() {
 		local THEVERSION=$REMOTE_WPVERSION
 	else
 		remotecli_process wpversion setvar
-		[[ ! $REMOTECLI_OUTPUT =~ ^AUTHOK:WPVERSION:([0-9](\.[0-9]+)+(-(alpha|beta|RC[0-9]?(-[0-9]+)))?)$ ]] && ws_event_error "Could not find the remote version number (output was: $REMOTECLI_OUTPUT)"
+		if [[ ! $REMOTECLI_OUTPUT =~ ^AUTHOK:WPVERSION:([0-9](\.[0-9]+)+(-(alpha|beta|RC[0-9]?(-[0-9]+)))?)$ ]]; then
+			ws_event_error "Could not find the remote version number (output was: $REMOTECLI_OUTPUT)"
+			return
+		fi
 		local THEVERSION=${BASH_REMATCH[1]}
 	fi
 	[[ $DEBUG -ge 1 ]] && ws_event_info "Remote version: $THEVERSION"
@@ -5480,6 +5592,7 @@ if [[ $METAMODE = "database" && $MODE = "searchandreplace" ]]; then
 	fi
 	exit
 fi
+
 
 if [[ $MODE = "listrollbacks" ]]; then
 	managerollbacks list
@@ -6016,6 +6129,16 @@ if [[ $FOUNDPLUG -eq 1 && ( ( $MODE = "normal" && $ROLLBACKTIME = "x" && $IGNORE
 	[[ $METAMODE != "core" ]] && make_and_enter ../../../../customimports.$METAMODE
 	make_and_enter ../fromwporg.$METAMODE
 	THE_PRISTINE_ZIP=""
+		
+	if [[ -s "$PRISTINE_FILENAME" ]]; then
+		# Sanity-check it
+		TMP_ZIPSIZE=`get_file_size "$PRISTINE_FILENAME"`
+		if [[ $TMP_ZIPSIZE -lt 300 ]]; then
+			[[ $DEBUG -ge 1 ]] && ws_event_info "Invalid zip found at $PRISTINE_FILENAME ($TMP_ZIPSIZE bytes): deleting"
+			rm -f $PRISTINE_FILENAME
+		fi
+	fi
+
 	if [[ -s ../customimports.$METAMODE/$PRISTINE_FILENAME ]]; then
 		THE_PRISTINE_ZIP="customimports.$METAMODE/$PRISTINE_FILENAME"
 		[[ $DEBUG -ge 1 ]] && ws_event_info "Copy of pristine zip found in customimports ($THE_PRISTINE_ZIP)"
