@@ -140,12 +140,18 @@ if (isset($_POST['wpm-c']) && $_POST['wpm-c'] == "earlyping") {
 if (isset($_POST['wpm-c'])) {
 
     // Get command (i.e. string before colon in wpm-c variable)
-    $wpmc_arr = explode(":", $_POST['wpm-c'], 2);
+    $wpmc_arr = explode(":", $_POST['wpm-c'], 3);
 
-    #var_dump($wpmc_arr);
+#    var_dump($wpmc_arr);
 
     $command = $wpmc_arr[0];
     $regex = $wpmc_arr[1];
+
+    $search_string = null;
+    if (count($wpmc_arr) > 2) {
+        $search_string = $wpmc_arr[2];
+    }
+
 
     if ($command == "filefind") {
         
@@ -168,14 +174,25 @@ if (isset($_POST['wpm-c'])) {
 
         #var_dump($testsearch);
 
-        foreach ($testsearch as $file) {
-            echo $file . "\n";
+        if ($search_string) {
+            foreach ($testsearch as $file) {
+                if( strpos(file_get_contents($file), $search_string) !== false) {
+                    // do stuff
+                    echo 'found ';
+                    echo $file . "\n";
+                }
+            }
+        } else {
+            foreach ($testsearch as $file) {
+                echo $file . "\n";
+            }
         }
 
         #echo "AUTHOK:PONG:$proto_version:".phpversion().":$wordshell_version";
         exit;
-    }
+    } 
 }
+
 
 
 #################################################################

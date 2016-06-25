@@ -757,6 +757,7 @@ function parse_option() {
 	elif [ "$i" = "--no-maintenance" ]; then NOMAINTENANCE=1
 	elif [ "$i" = "--removecontroller" ]; then mode_switch "removecontroller"
 	elif [[ $i =~ ^--filefindmode=(.*)$ ]]; then mode_switch "filefindmode"; FILEFINDREGEX=${BASH_REMATCH[1]};
+	elif [[ $i =~ ^--filefindinmode=(.*)$ ]]; then mode_switch "filefindinmode"; FILEFINDREGEX=${BASH_REMATCH[1]};
 #	elif [ "$i" = "--testingmode" ]; then mode_switch "testingmode"
 	elif [ -n "$i" ]; then options_abort "Unknown option: $i"
 	#else echo "???: $i"
@@ -5115,9 +5116,24 @@ fi
 function remotecmd() {
 	# 
 	#local LISTOFFILES=$1
-	[[ $DEBUG -ge 1 ]] && ws_event_info "Remote cmd = filefind:$1"
-	#if [[ -n $DELTHISFILE ]]; then
+	
+
+	if [ -z "$2" ]; then
+#		if [[ $MODE = "filefindmode" ]]; then
+		
+		[[ $DEBUG -ge 1 ]] && ws_event_info "Remote cmd = filefind:$1"
+		#exit
 		remotecli_process "filefind:$1"
+#		fi
+	else 
+		[[ $DEBUG -ge 1 ]] && ws_event_info "Remote cmd = filefind:$1:$2"
+		#exit
+		remotecli_process "filefind:$1:$2"
+	fi
+
+#	if [[ $MODE = "filefindinmode" ]]; then
+#		remotecli_process "filefindin:$1"
+#	fi
 		#if [[ $REMOTECLI_OUTPUT =~ :DELETED: ]]; then
 		#	[[ $DEBUG -ge 2 ]] && ws_event_info "Successfully deleted file: $DELTHISFILE"
 		#else
@@ -5126,17 +5142,49 @@ function remotecmd() {
 	#fi
 }
 
-# Testing remote.  Added by mikeybeck
+
+
+
+
+# Added by mikeybeck
 if [[ $MODE = "filefindmode" ]]; then
-				echo "Searching $SITEURL for files"
-				echo  "Using regex /$FILEFINDREGEX/"
-#				echo $TESTINGMODEPARAM
-#				exit
-				#SITE=${SITES[1]}
-                # .*txt would find all txt files
-				remotecmd $FILEFINDREGEX
-				exit
+	
+
+	# Check for caret ^ symbol
+	if [[ $FILEFINDREGEX == *"^"* ]]; then
+		# Do search inside files using string after ^
+		FINDSTRING=${FILEFINDREGEX#*^}
+		REGEX=${FILEFINDREGEX%^*}
+
+		# If regex is * then search for everything
+		if [[ $REGEX = "*" ]]; then
+				REGEX="[\s\S]*"
+		fi
+	 
+		echo "Searching $SITEURL for files"
+		echo "Using regex /$REGEX/"
+		echo "Containing string: $FINDSTRING"
+        ## .*txt would find all txt files
+		remotecmd $REGEX $FINDSTRING
+		exit
+	fi
+
+	# If regex is * then search for everything
+	if [[ $FILEFINDREGEX = "*" ]]; then
+			REGEX="[\s\S]*"
+	else
+		REGEX=$FILEFINDREGEX
+	fi
+
+	echo "Searching $SITEURL for files"
+	echo  "Using regex /$REGEX/"
+    # .*txt would find all txt files
+	remotecmd $REGEX
+	exit
+
 fi
+
+
 
 # Delete remote wp controller.  Added by mikeybeck
 if [[ $MODE = "removecontroller" ]]; then
