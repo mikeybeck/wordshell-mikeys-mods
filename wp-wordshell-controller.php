@@ -145,15 +145,15 @@ if (isset($_POST['wpm-c'])) {
 #    var_dump($wpmc_arr);
 
     $command = $wpmc_arr[0];
-    $regex = $wpmc_arr[1];
-
-    $search_string = null;
-    if (count($wpmc_arr) > 2) {
-        $search_string = $wpmc_arr[2];
-    }
-
 
     if ($command == "filefind") {
+
+        $regex = $wpmc_arr[1];
+
+        $search_string = null;
+        if (count($wpmc_arr) > 2) {
+            $search_string = $wpmc_arr[2];
+        }
         
         function rsearch($folder, $pattern) {
             $dir = new RecursiveDirectoryIterator($folder);
