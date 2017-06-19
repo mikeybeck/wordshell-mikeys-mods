@@ -4,7 +4,7 @@
 VERSION="1.3.136 (2016-06-18)"
 
 # (c) David Anderson 2011-
-# With modifications by mikeybeck (2016)
+# With modifications by mikeybeck (2016-2017)
 #
 # http://wordshell.net / contact@wordshell.net
 #
@@ -15,6 +15,7 @@ VERSION="1.3.136 (2016-06-18)"
 # mikeybeck's mods:
 # 05/16: Addition of --no-maintenance mode, which prevents site from going into maintenance mode when updating plugins.  (not recommended but y'know...)
 # 06/16: Made remote controller local only so I can make changes (no longer fetches from Amazon s3)
+# 06/17: Added numerical index to plugin list to make selection/specification easier
 
 
 # * * * BEGIN CONFIGURATION * * * #
@@ -758,6 +759,8 @@ function parse_option() {
 	elif [ "$i" = "--removecontroller" ]; then mode_switch "removecontroller"
 	elif [[ $i =~ ^--filefindmode=(.*)$ ]]; then mode_switch "filefindmode"; FILEFINDREGEX=${BASH_REMATCH[1]};
 	elif [[ $i =~ ^--filefindinmode=(.*)$ ]]; then mode_switch "filefindinmode"; FILEFINDREGEX=${BASH_REMATCH[1]};
+	elif [[ $i =~ ^--testclimode=(.*)$ ]]; then mode_switch "testclimode"; CLICMD=${BASH_REMATCH[1]};
+	##elif [ "$i" = "--testclimode" ]; then mode_switch "testclimode"; CLICMD=${BASH_REMATCH[1]};
 #	elif [ "$i" = "--testingmode" ]; then mode_switch "testingmode"
 	elif [ -n "$i" ]; then options_abort "Unknown option: $i"
 	#else echo "???: $i"
@@ -5142,9 +5145,39 @@ function remotecmd() {
 	#fi
 }
 
+function remotecli() {
+	# 
+	#local LISTOFFILES=$1
+	
+
+	if [ -z "$2" ]; then
+		
+		[[ $DEBUG -ge 1 ]] && ws_event_info "Remote cmd = remotecli:$1"
+
+		remotecli_process "remotecli:$1"
+
+	fi
+
+}
 
 
 
+# Added by mikeybeck
+if [[ $MODE = "testclimode" ]]; then
+	
+
+#	if [[ $FILEFINDREGEX = "*" ]]; then
+#		REGEX=$FILEFINDREGEX
+#	fi
+
+#	echo "Searching $SITEURL for files"
+#	echo  "Using regex /$REGEX/"
+	echo "running cmd... $CLICMD"
+
+	remotecli $CLICMD
+	exit
+
+fi
 
 # Added by mikeybeck
 if [[ $MODE = "filefindmode" ]]; then
@@ -5926,6 +5959,9 @@ function show_theentities() {
 	# Input: make sure we are cd-ed into a directory of the appropriate (METAMODE) entities
 	# $1 : slug to match - or if empty, show them all
 	# At present, use of this parameter (i.e. non-empty) implies we are in list mode, so we can assume that
+
+	# mikeybeck's mods: save current entities list to file with index numbers 
+
 	local SHOWONLY=$1
 	[[ $DEBUG -ge 1 ]] && ws_event_debug "show_theentities: $SHOWONLY (pwd: `pwd`, caller: `caller`)"
 	FOUNDWANTED=0
@@ -5938,6 +5974,9 @@ function show_theentities() {
 		IFS="
 	"
 		# Find the plugins
+		echo -n > "../entities.txt"
+		ENT_INDEX=0
+		#ENT_NUM=00
 		for i in `find . -maxdepth 1 -iregex './[a-z0-9].*' | sort`; do
 			# This could match the directory name (e.g. "akismet" from plugin akismet/akismet.php) or the file name (e.g. hello.php for "Hello Dolly")
 			PLUGDIR=`echo "$i" | cut -d/ -f2`
@@ -5946,21 +5985,41 @@ function show_theentities() {
 			if [[ -d $i ]]; then
 				# Enter the plugin's directory
 				ws_pushd "$i"
+				
+				# Print entity index number
+				if (( $ENT_INDEX < 10 )); then
+					ENT_NUM="0${ENT_INDEX}"
+				else
+					ENT_NUM="$ENT_INDEX"
+				fi
+
+				echo -n "$ENT_NUM  "
+
+				# Add entity number and remove ./ from plugin name
+				echo "$ENT_NUM" ${i#./} >> ../../entities.txt
+				
+				
 				# See what's in this directory
 				showentity_thisdir "$SHOWONLY"
 				ws_popd
 			# Plugins in files
 			elif [[ $METAMODE = "plugin" && $i =~ .*\.php$ ]]; then
+				echo "$ENT_NUM" file >> ../../entities.txt
+				# Print entity index number
+				echo -n "$ENT_NUM  "
 				showentity_thisdir "$SHOWONLY" file
 			else
 				[[ $DEBUG -ge 1 ]] && ws_event_notice "$i: Unknown entity found in ${METAMODE}s directory"
 			fi
+			ENT_INDEX=$((ENT_INDEX+1))
 		done
 		if [[ $WARNMISSING -eq 1 && $FOUNDWANTED -eq 0 && $MODE = "list" ]]; then
 			ws_event_warning "no ${METAMODE} found (site: $SITE)"
 		fi
 		IFS="$OLDIFS"
 	fi
+
+	echo $PWD
 }
 
 HAVESHOWNPLUGS=0
@@ -6122,12 +6181,17 @@ while [[ ( -z $PLUGIN || ! -e "$PLUGIN" ) && $MODE != "install" && $PLUGIN_OR_TH
 	read -p "${METAMODE_CAP} to $PLACTION (prepend with changelog/description to show info; Ctrl-C to quit): " PLUGIN
 	CREGEX="^c(hangelog)? (\S+)$"
 	DREGEX="^d(escription)? (\S+)$"
+	INT='^[0-9]+$'
 	if [[ $PLUGIN =~ $CREGEX ]]; then
 		get_api_changelog ${BASH_REMATCH[2]} changelog
 		PLUGIN=""
 	elif [[ $PLUGIN =~ $DREGEX ]]; then
 		get_api_changelog ${BASH_REMATCH[2]} description
 		PLUGIN=""
+	# Mikey's mods: Match plugin/theme number with number from entities file; get plugin name from there
+	elif [[ $PLUGIN =~ $INT ]]; then
+		PLUGIN=`sed -n "s/$PLUGIN //p" ../entities.txt`
+		echo "$PLUGIN" "selected"
 	elif [ ! -d "$PLUGIN" ]; then
 		ws_event_error "${METAMODE_CAP} not found, please try again"
 		PLUGIN=""
@@ -6836,7 +6900,7 @@ if [[ $METAMODE != "content" && ( $METAMODE != "core" || $MODE != "install" ) ]]
 		else
 			if [[ $NOMAINTENANCE == 1 ]]; then
 				echo "--no-maintenance mode selected!"
-				echo "Not bothering with maintenance mode.  Would be entering now though. zzzz"
+				echo "Not bothering with maintenance mode.  Would be entering now though."
 			else
 				maintenance_mode enterwait
 			fi
