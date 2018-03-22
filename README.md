@@ -6,3 +6,4 @@
 - 05/16: Addition of --no-maintenance mode, which prevents site from going into maintenance mode when updating plugins.  (not recommended but y'know...)
 - 06/16: Made remote controller local only so I can make changes (no longer fetches from Amazon s3)
 - 06/17: Added numerical index to plugin list to make selection/specification easier (display is a bit buggy but selection should work ok)
+- 03/18: Fixed numerical index to plugin list (still doesn't always display correctly though)
