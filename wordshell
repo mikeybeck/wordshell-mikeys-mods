@@ -87,7 +87,7 @@ MD5CHECKSUM_TRY="md5sum"
 WORKDIR="$HOME/.wordshell"
 CONFIGFILE="$WORKDIR/rc"
 
-WORKDIR="/vagrant/.wordshell" #This makes Mikey's Wordshell installation work
+#WORKDIR="/vagrant/.wordshell" #This makes Mikey's Wordshell installation work
 CONFIGFILE="$WORKDIR/rc"
 
 
@@ -104,8 +104,8 @@ EXCLUDE_GLOB_RSYNC="wponlinebackup/tmp/*"
 
 # Where to fetch a wp-wordshell-controller.php script of sufficiently high protocol from
 REMOTE_MANAGER_MINIMUM_PROTOCOL=22
-#REMOTE_MANAGER_FROM="https://wordshellnet.s3.amazonaws.com/wp-wordshell-controller.php.$REMOTE_MANAGER_MINIMUM_PROTOCOL"
-REMOTE_MANAGER_FROM="$WORKDIR/wp-wordshell-controller.php"
+REMOTE_MANAGER_FROM="https://wordshellnet.s3.amazonaws.com/wp-wordshell-controller.php.$REMOTE_MANAGER_MINIMUM_PROTOCOL"
+#REMOTE_MANAGER_FROM="$WORKDIR/wp-wordshell-controller.php"
 
 SELINUX=0
 [[ $UNAME = "Linux" ]] && selinuxenabled 2>/dev/null && SELINUX=1
@@ -5981,37 +5981,43 @@ function show_theentities() {
 			# This could match the directory name (e.g. "akismet" from plugin akismet/akismet.php) or the file name (e.g. hello.php for "Hello Dolly")
 			PLUGDIR=`echo "$i" | cut -d/ -f2`
 
+			if (( $ENT_INDEX < 10 )); then
+				ENT_NUM="0${ENT_INDEX}"
+			else
+				ENT_NUM="$ENT_INDEX"
+			fi
+	
 			# Plugins in directories
 			if [[ -d $i ]]; then
 				# Enter the plugin's directory
 				ws_pushd "$i"
-				
-				# Print entity index number
-				if (( $ENT_INDEX < 10 )); then
-					ENT_NUM="0${ENT_INDEX}"
-				else
-					ENT_NUM="$ENT_INDEX"
+
+				if [[ $(showentity_thisdir "$SHOWONLY") ]]; then
+					# Print entity index number
+					echo -n "$ENT_NUM  "
+					# Add entity number and remove ./ from plugin name
+					echo "$ENT_NUM" ${i#./} >> ../../entities.txt
+					ENT_INDEX=$((ENT_INDEX+1))
 				fi
 
-				echo -n "$ENT_NUM  "
-
-				# Add entity number and remove ./ from plugin name
-				echo "$ENT_NUM" ${i#./} >> ../../entities.txt
-				
-				
 				# See what's in this directory
 				showentity_thisdir "$SHOWONLY"
 				ws_popd
 			# Plugins in files
 			elif [[ $METAMODE = "plugin" && $i =~ .*\.php$ ]]; then
-				echo "$ENT_NUM" file >> ../../entities.txt
-				# Print entity index number
-				echo -n "$ENT_NUM  "
+
+				if [[ $(showentity_thisdir "$SHOWONLY" file) ]]; then
+					# Print entity index number
+					echo -n "$ENT_NUM  "
+					echo "$ENT_NUM" file >> ../../entities.txt
+					ENT_INDEX=$((ENT_INDEX+1))
+				fi
+
 				showentity_thisdir "$SHOWONLY" file
 			else
 				[[ $DEBUG -ge 1 ]] && ws_event_notice "$i: Unknown entity found in ${METAMODE}s directory"
 			fi
-			ENT_INDEX=$((ENT_INDEX+1))
+
 		done
 		if [[ $WARNMISSING -eq 1 && $FOUNDWANTED -eq 0 && $MODE = "list" ]]; then
 			ws_event_warning "no ${METAMODE} found (site: $SITE)"
