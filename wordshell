@@ -104,8 +104,8 @@ EXCLUDE_GLOB_RSYNC="wponlinebackup/tmp/*"
 
 # Where to fetch a wp-wordshell-controller.php script of sufficiently high protocol from
 REMOTE_MANAGER_MINIMUM_PROTOCOL=22
-REMOTE_MANAGER_FROM="https://wordshellnet.s3.amazonaws.com/wp-wordshell-controller.php.$REMOTE_MANAGER_MINIMUM_PROTOCOL"
-#REMOTE_MANAGER_FROM="$WORKDIR/wp-wordshell-controller.php"
+#REMOTE_MANAGER_FROM="https://wordshellnet.s3.amazonaws.com/wp-wordshell-controller.php.$REMOTE_MANAGER_MINIMUM_PROTOCOL"
+REMOTE_MANAGER_FROM="$WORKDIR/wp-wordshell-controller.php"
 
 SELINUX=0
 [[ $UNAME = "Linux" ]] && selinuxenabled 2>/dev/null && SELINUX=1
