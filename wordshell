@@ -102,9 +102,8 @@ EXCLUDE_GLOB_FTP="wponlinebackup/tmp/*"
 # Note that if you do not have rsync installed then this next line is totally ignored
 EXCLUDE_GLOB_RSYNC="wponlinebackup/tmp/*"
 
-# Where to fetch a wp-wordshell-controller.php script of sufficiently high protocol from
+# Where to fetch a wp-wordshell-controller.php script of sufficiently high protocol from (locally)
 REMOTE_MANAGER_MINIMUM_PROTOCOL=22
-#REMOTE_MANAGER_FROM="https://wordshellnet.s3.amazonaws.com/wp-wordshell-controller.php.$REMOTE_MANAGER_MINIMUM_PROTOCOL"
 REMOTE_MANAGER_FROM="$WORKDIR/wp-wordshell-controller.php"
 
 SELINUX=0
