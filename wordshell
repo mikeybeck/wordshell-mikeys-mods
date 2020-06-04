@@ -252,7 +252,7 @@ function ws_logger() {
 		[[ ( $1 = "ERROR" || $1 = "WARNING" ) ]] && echo -n "${OFFBOLD}" >/dev/stderr
 		echo "$2" >/dev/stderr
 	fi
-	
+
 	# File logging: all ERROR, WARNING and NOTICE messages
 	if [[ $1 = "ERROR" || $1 = "WARNING" || $1 = "NOTICE" ]]; then
 		# Log if the working directory path is now known, and if the log file location is not a symlink
@@ -327,7 +327,7 @@ ${BOLD}Modes for performing plugin/theme/core operations (mostly mutually exclus
 --editconfig        :	Opens up the WordShell configuration in the configured text editor
 --install           :	Install mode (uploads plugin; add --activate to also activate it)
 --list              :	List installed plugins on the site. If you specify a plugin name, then this is used as an extended regex for matching; use --listexact to require an exact match. When the list is shown, a (-) next to the plugin name implies that the plugin could not be found at wordpress.org (hence either removed, or was third-party).
---login             :	Drops you into a shell or (S)FTP prompt in the site's WordPress installation root 
+--login             :	Drops you into a shell or (S)FTP prompt in the site's WordPress installation root
 --rollback          :	Roll back to the most recently replaced version. If you optionally specify a time, then this will instead then automatically select the version of the plugin installed at that time, as far as we know. If you have GNU date (coreutils) installed, then any string supported by the 'date' command can be used here; e.g. --time='last Tuesday', --time='10 days ago', --time='24 Feb'. Otherwise, you must supply an epoch time. Use --listrollbacks to see what is available.
 --restore           :	Restores the current copy of the indicated entities. This differs from --rollback in that it restores the believed-to-be-current version from our local cache/backup (rather than any previously replaced version). This implies --cache --cache (as otherwise, if the site has been damaged, we would first replicate that damage to the local cache) and then you'd need to head to your backups). In fact, we assume that your site is damaged, and drop all sanity checks related to the currently installed entity and the backup you are replacing it from. With an undamaged site and up-to-date cache, --restore should result in no real changes. When operating upon core, this will restore whatever you backed up (see --justwp). If you wish to restore the backup to a different location (i.e. not the site's regular home), then supply a parameter, e.g. --restore=/var/www/newlocation (accepts both file paths and FTP/SFTP URLs - specify the path for the WordPress base; do not include wp-content/plugins etc.).
 --update            :	Upgrade mode (this is the default if no other mode is specified; you only need to specify it manually if combining with --activate (--activate without --update does not perform a plugin update)). --upgrade is a synonym.
@@ -1414,7 +1414,7 @@ Or with -d:
 <--- Location: http://www.homeedsuccess.co.uk/he
 <--- Date: Tue, 15 May 2012 10:26:17 GMT
 <--- Server: lighttpd
-<--- 
+<---
 cd: File moved: 301 Moved Permanently (/ -> http://www.homeedsuccess.co.uk/he)
 
 curl --head http://www.homeedsuccess.co.uk
@@ -1489,7 +1489,7 @@ elif [[ -n $CURL && ( -z $3 || $3 = "passwarning" || $3 = "testonly" || $3 =~ "t
 			[[ $1 =~ ^http ]] && CURLOPTS="$CURLOPTS --fail --anyauth --netrc-optional"
 		fi
 		if [[ $DEBUG -ge 2 ]]; then
-			echo 
+			echo
 			echo $CURLUSER | $CURL $CURLVERB --show-error $CURLOPTS $CURL_OUTPUT "$CURL_URL"
 			CURLRET=$?
 		else
@@ -1544,7 +1544,7 @@ function url_post() {
 	local POST_OPTS=$4
 	# This is needed to use STAT_MODTIME correctly (the spaces in it need recognising as parameter separators)
 	local OLDIFS=$IFS
-	IFS=" 	
+	IFS="
 "
 	if [[ -z $CHECKSUM ]]; then
 		# If no checksum binary, then cannot store predictable cache file name, so just use temp file
@@ -1661,7 +1661,7 @@ function group_mod() {
 	elif [[ $GROUPRESULT_COUNT -gt 0 || $GMODE = "add" ]]; then
 		local FOUNDIT=0
 		local OLDIFS=$IFS
-		IFS=" 
+		IFS="
 "
 		for k in `seq 1 $GROUPRESULT_COUNT`; do
 			if [[ "${GROUPRESULT[$k]}" = "$ADDTHIS" ]]; then
@@ -1691,7 +1691,7 @@ function process_group_define() {
 	GROUPRESULT_COUNT=0
 	for GPART in $GROUPDEF; do
 		if [[ $GPART = "all" ]]; then
-			SITELIST=`grep "^site#" "$CONFIGFILE" | cut -d\# -f2` 
+			SITELIST=`grep "^site#" "$CONFIGFILE" | cut -d\# -f2`
 			IFS="
 "
 			for ADD_THIS in $SITELIST; do
@@ -1851,13 +1851,13 @@ function download_version() {
 APPARENT_NEW_VERSION=""
 
 function make_and_enter() {
-	[[ $DEBUG -ge 2 ]] && ws_event_debug "make_and_enter: (`caller`): $1"	
+	[[ $DEBUG -ge 2 ]] && ws_event_debug "make_and_enter: (`caller`): $1"
 	[[ -d "$1" ]] || mkdir -p "$1"
 	ws_cd "$1"
 }
 
 function make_and_pushd() {
-	[[ $DEBUG -ge 2 ]] && ws_event_debug "make_and_pushd: (`caller`): $1"	
+	[[ $DEBUG -ge 2 ]] && ws_event_debug "make_and_pushd: (`caller`): $1"
 	[[ -d "$1" ]] || mkdir -p "$1"
 	ws_pushd "$1"
 }
@@ -1959,7 +1959,7 @@ function choose_rollback() {
 			SAVE_WHICHROLLBACK=$WHICHROLLBACK
 			if [ "$WHICHROLLBACK" != "most recent" ]; then
 				# Convert what is typed in into a UNIX time
-				if [[ $CAN_STRTOTIME -eq 1 ]]; then 
+				if [[ $CAN_STRTOTIME -eq 1 ]]; then
 					WHICHROLLBACK=`ws_strtotime "$WHICHROLLBACK"`
 					[[ $? -ne 0 ]] && WHICHROLLBACK="error"
 				fi
@@ -2232,7 +2232,7 @@ function ensure_unpacked_core_exists() {
 # Expects to be in working directory
 
 function process_rollbacktime() {
-	# The info that we wanted a rollback is found in $ROLLBACKTIME = x(=no rollback)/n(=show menu)/time string - 
+	# The info that we wanted a rollback is found in $ROLLBACKTIME = x(=no rollback)/n(=show menu)/time string -
 	MODE="normal"
 	if [[ $ROLLBACKTIME != "x" ]]; then
 		[[ $DEBUG -ge 1 ]] && ws_event_info "Looking for installed version from time: $ROLLBACKTIME"
@@ -2300,7 +2300,7 @@ elif [[ $DO_MULTIPLE_METAMODE -eq 0 ]]; then
 					else
 						abort_die 65 "$USEZIP: Download failed"
 					fi
-					
+
 				else
 					abort_die 65 "Cannot download URL: $USEZIP: You need to install one of lftp, curl or wget (run again with --checkrequirements for more information"
 				fi
@@ -2455,7 +2455,7 @@ function version_sort() {
 			NEXTFIRST="1.${BASH_REMATCH[1]}"
 			FIRST_RC=1
 		fi
-		# Is the second an rc? 
+		# Is the second an rc?
 		if [[ $REMSECOND =~ ^-?[rR][cC](.*)$ ]]; then
 			# Is an RC. If first part was not, then first is greater
 			[[ $FIRST_RC -eq 0 ]] && return 0
@@ -2606,9 +2606,9 @@ function get_api_entity_info() {
 			unset API_PLUGIN_VER
 			return 6
 		fi
-		
+
 	fi
-	
+
 	if [ $DISABLEAPI -eq 1 ]; then
 		[[ $DEBUG -ge 1 ]] && ws_event_info "API was disabled via --disableapi"
 		return 5
@@ -3189,7 +3189,7 @@ function download_remote_manager() {
 		NEED_TO_DOWNLOAD=1
 	else
 		local REMOTE_PROTOVER=`grep -E 'proto_version[[:space:]]*=' wp-wordshell-controller.php | head -1 | cut -d\" -f2`
-		if [[ -z $REMOTE_PROTOVER || ! $REMOTE_PROTOVER -ge $NEEDED_REMOTEPROTO ]]; then 
+		if [[ -z $REMOTE_PROTOVER || ! $REMOTE_PROTOVER -ge $NEEDED_REMOTEPROTO ]]; then
 			NEED_TO_DOWNLOAD=1
 			[[ $DEBUG -ge 1 ]] && ws_event_info "wp-wordshell-controller.php found, but insufficiently high protocol version (found:$REMOTE_PROTOVER needed:$NEEDED_REMOTEPROTO); will try to download updated version"
 		fi
@@ -3207,7 +3207,7 @@ function download_remote_manager() {
 	local REMOTE_PROTOVER=`grep -E 'proto_version[[:space:]]*=' wp-wordshell-controller.php | head -1 | cut -d\" -f2`
 	if [[ -z $REMOTE_PROTOVER ]]; then
 		abort_die 85 "wp-wordshell-controller.php found, but could not detect the protocol version (perhaps the file is corrupt)"
-	elif [[ ! $REMOTE_PROTOVER -ge $NEEDED_REMOTEPROTO ]]; then 
+	elif [[ ! $REMOTE_PROTOVER -ge $NEEDED_REMOTEPROTO ]]; then
 		abort_die 85 "wp-wordshell-controller.php found, but insufficiently high protocol version (found:$REMOTE_PROTOVER needed:$NEEDED_REMOTEPROTO)"
 	fi
 
@@ -3271,7 +3271,7 @@ function setup_remote_manager() {
 #	fi
 
 
-	
+
 	if [[ $ACCESSMETHOD = "file" ]]; then
 		[[ $DEBUG -ge 1 ]] && ws_event_info "Copy across remote controller (filesystem)"
 		cp $COPYOPT $CONTROL_TMP "$FILEDIR/wp-wordshell-controller.php"
@@ -3413,7 +3413,7 @@ function remotecli_process() {
 		fi
 
 		[[ ( $METAMODE = "core" || $METAMODE = "plugin" ) && $MODE = "normal" && $REMOTECLI_COM = "ping" ]] && return
-		
+
 		REMOTE_DEBUG=""
 		[[ $RDEBUG -ge 1 ]] && REMOTE_DEBUG="&wpm-d=1"
 
@@ -3850,7 +3850,7 @@ function ftp_mirror() {
 	else
 		abort_die 79 "$1: Unknown ftp_mirror mode"
 	fi
-	
+
 }
 
 function ftp_checkfileexistence() {
@@ -3875,6 +3875,7 @@ if [[ -n $LFTP ]]; then
 	local LFTPOUTPUT=`mktemp "$WORKINGDIR_FULL/tmp/LFTP_OUT.XXXXX"`
 	# The redirection to /dev/null suppress some debug output, but is needed to also suppress messages like "Access failed: 550 Can't change directory to /web/.maintenance: No such file or directory". To work around this problem, we have these two almost-identical blocks here, plus the option.
 	if [[ $DEBUG -eq 0 && $2 =~ suppress ]]; then
+    echo '1'
 		$LFTP $LFTPDEBUG 2>/dev/null >$LFTPOUTPUT <<-ENDHERE
 		open $ACCESSMETHOD://$FTPHOST
 		user "$FTPUSER" "$FTPPASS"
@@ -3883,6 +3884,7 @@ if [[ -n $LFTP ]]; then
 		cls -d "$FILE""
 		ENDHERE
 	else
+        echo '2'
 		$LFTP $LFTPDEBUG >$LFTPOUTPUT <<-ENDHERE
 		open $ACCESSMETHOD://$FTPHOST
 		user "$FTPUSER" "$FTPPASS"
@@ -3891,6 +3893,7 @@ if [[ -n $LFTP ]]; then
 		cls -d "$FILE""
 		ENDHERE
 	fi
+        echo '3'
 	CLS_OUTPUT=`cat $LFTPOUTPUT`
 	rm -f $LFTPOUTPUT
 	[[ $DEBUG -ge 1 ]] && ws_event_debug "Output=$CLS_OUTPUT when looking for file=$FILE"
@@ -4125,7 +4128,7 @@ function maintenance_mode() {
 				else
 					echo "<?php global \$wordshell_maintenance; \$upgrading = (\$wordshell_maintenance === true ) ? 0 : $MAINTENANCE_TIME; ?>" >.maintenance
 					[[ $DEBUG -ge 1 ]] && ws_event_info "Entering maintenance mode ($ACCESSMETHOD://$FTPUSER@$FTPHOST/$FTPDIR/.maintenance)"
-					
+
 					if [[ -n $LFTP || $CURL_CAN_ACCESSMETHOD -eq 1 ]]; then
 						ftp_putfile .maintenance
 					else
@@ -4160,7 +4163,7 @@ function maintenance_mode() {
 				ws_event_notice "$SITE: Left maintenance mode"
 			fi
 		fi
-		
+
 	fi
 
 }
@@ -4244,7 +4247,7 @@ if [[ $MODE = "listsites" ]]; then
 		list_site "^d?site#"
 	elif [[ $SITECOUNT -ge 2 ]]; then
 		for i in `seq 1 $SITECOUNT`; do
-			list_site "^d?site#${SITES[$i]}#" 
+			list_site "^d?site#${SITES[$i]}#"
 		done
 	else
 		list_site "^d?site#$SITE#"
@@ -4436,7 +4439,7 @@ if [[ $SITECOUNT -ge 2 && ( $DO_MULTIPLE_METAMODE -eq 0 || $GROUPBYTYPE -eq 0 ) 
 		site_reinvoke "^site#"
 	else
 		for i in `seq 1 $SITECOUNT`; do
-			site_reinvoke "^site#${SITES[$i]}#" 
+			site_reinvoke "^site#${SITES[$i]}#"
 		done
 	fi
 
@@ -4862,11 +4865,15 @@ function set_ftp_encryption_options() {
 		ACCESSMETHOD="ftp"
 	fi
 
+    echo "setting ftp options 1"
+
 	# By this point, we have ascertained whether we are using encryption with FTP or not.
 	# This next check should be redundant, as the code above already does not allow it.
 	if [[ $DISABLEFTPTLS -eq 1 && $REQUIREFTPTLS -eq 1 ]]; then
 		abort_die 78 "Conflicting options; options were detected to both mandate and forbid FTP encryption"
 	fi
+
+    echo "setting ftp options 2"
 	# Now, write the LFTP configuration file accordingly and set the curl options properly
 	LFTPCONF_TMP=`mktemp tmp/lftp-cfg.XXXXX`
 	grep -v "set ftp:ssl-allow" lftp/rc | grep -v "set ftp:ssl-force" > $LFTPCONF_TMP
@@ -4888,10 +4895,13 @@ function set_ftp_encryption_options() {
 		# Means, "try ssl; revert to plain if not supported"
 		CURL_FTPOPTIONS="$CURL_FTPOPTIONS --ftp-ssl"
 	fi
+
+    echo "setting ftp options 3"
 	mv $LFTPCONF_TMP lftp/rc
 	[[ $DEBUG -ge 2 && -n $LFTP ]] && ws_event_debug "LFTP configuration file dump follows: `cat lftp/rc`"
 	[[ $DEBUG -ge 2 && $CURL_CAN_ACCESSMETHOD ]] && ws_event_debug "Curl FTP command line options to use: $CURL_FTPOPTIONS"
 
+    echo "setting ftp options 4"
 }
 
 function get_ftp_details() {
@@ -4917,6 +4927,7 @@ if [[ $ACCESSMETHOD =~ ftp ]]; then
 	ORIGINAL_ACCESSMETHOD=$ACCESSMETHOD
 	ORIGINAL_REQUIREFTPTLS=$REQUIREFTPTLS
 	ORIGINAL_DISABLEFTPTLS=$DISABLEFTPTLS
+    echo "setting ftp options"
 	set_ftp_encryption_options
 fi
 
@@ -4924,9 +4935,13 @@ fi
 
 # Directory existence to test for
 # Default that should work with any new meta-modes added in future
+echo "checking sanity"
+
 CHECK_SANITY="wp-includes"
 [[ $METAMODE = "plugin" || $METAMODE = "theme" ]] && CHECK_SANITY="$CONTENTDIR/${METAMODE}s"
 [[ $METAMODE = "content" ]] && CHECK_SANITY="$CONTENTDIR"
+
+echo "sanity check complete"
 
 function core_install_consistency_check() {
 	# --core --install: need to verify that this location is actually the same as that given in SITEURL (test an upload)
@@ -4971,6 +4986,8 @@ if [[ ( $MODE != "restore" || -z $RESTOREPATH ) && $ACCESSMETHOD =~ ftp ]]; then
 		fi
 	done
 
+echo "verifying.."
+
 	# Verify that this location is actually the same as that given in SITEURL (test an upload)
 	[[ $METAMODE = "core" && $MODE = "install" ]] && core_install_consistency_check
 
@@ -4999,6 +5016,9 @@ if [[ ( $MODE != "restore" || -z $RESTOREPATH ) && $ACCESSMETHOD =~ ftp ]]; then
 		[[ $TMP_ALLFILES = "n" || $TMP_ALLFILES = "N" ]] && echo "siteopt#$SITESAVE#--justwp" >>"$CONFIGFILE"
 	fi
 
+    echo "site saved"
+
+
 	# Login mode - drop into this before doing anything else (we want to be able to drop in even (especially) if things are broken)
 	# Script then terminates - login_mode does not return
 	[[ $MODE = "login" ]] && ftp_login_mode
@@ -5008,6 +5028,9 @@ if [[ ( $MODE != "restore" || -z $RESTOREPATH ) && $ACCESSMETHOD =~ ftp ]]; then
  		CACHE=1
  		SYNC=0
 	fi
+
+    echo "x1"
+
 
 	# Sanity check existence of remote site, if appropriate
 	if [[ $FTP_FOUND -eq 1 ]]; then
@@ -5117,18 +5140,18 @@ fi
 
 
 function remotecmd() {
-	# 
+	#
 	#local LISTOFFILES=$1
-	
+
 
 	if [ -z "$2" ]; then
 #		if [[ $MODE = "filefindmode" ]]; then
-		
+
 		[[ $DEBUG -ge 1 ]] && ws_event_info "Remote cmd = filefind:$1"
 		#exit
 		remotecli_process "filefind:$1"
 #		fi
-	else 
+	else
 		[[ $DEBUG -ge 1 ]] && ws_event_info "Remote cmd = filefind:$1:$2"
 		#exit
 		remotecli_process "filefind:$1:$2"
@@ -5146,12 +5169,12 @@ function remotecmd() {
 }
 
 function remotecli() {
-	# 
+	#
 	#local LISTOFFILES=$1
-	
+
 
 	if [ -z "$2" ]; then
-		
+
 		[[ $DEBUG -ge 1 ]] && ws_event_info "Remote cmd = remotecli:$1"
 
 		remotecli_process "remotecli:$1"
@@ -5164,7 +5187,7 @@ function remotecli() {
 
 # Added by mikeybeck
 if [[ $MODE = "testclimode" ]]; then
-	
+
 
 #	if [[ $FILEFINDREGEX = "*" ]]; then
 #		REGEX=$FILEFINDREGEX
@@ -5181,7 +5204,7 @@ fi
 
 # Added by mikeybeck
 if [[ $MODE = "filefindmode" ]]; then
-	
+
 
 	# Check for caret ^ symbol
 	if [[ $FILEFINDREGEX == *"^"* ]]; then
@@ -5193,7 +5216,7 @@ if [[ $MODE = "filefindmode" ]]; then
 		if [[ $REGEX = "*" ]]; then
 				REGEX="[\s\S]*"
 		fi
-	 
+
 		echo "Searching $SITEURL for files"
 		echo "Using regex /$REGEX/"
 		echo "Containing string: $FINDSTRING"
@@ -5960,7 +5983,7 @@ function show_theentities() {
 	# $1 : slug to match - or if empty, show them all
 	# At present, use of this parameter (i.e. non-empty) implies we are in list mode, so we can assume that
 
-	# mikeybeck's mods: save current entities list to file with index numbers 
+	# mikeybeck's mods: save current entities list to file with index numbers
 
 	local SHOWONLY=$1
 	[[ $DEBUG -ge 1 ]] && ws_event_debug "show_theentities: $SHOWONLY (pwd: `pwd`, caller: `caller`)"
@@ -5986,7 +6009,7 @@ function show_theentities() {
 			else
 				ENT_NUM="$ENT_INDEX"
 			fi
-	
+
 			# Plugins in directories
 			if [[ -d $i ]]; then
 				# Enter the plugin's directory
@@ -6247,7 +6270,7 @@ if [[ $FOUNDPLUG -eq 1 && ( ( $MODE = "normal" && $ROLLBACKTIME = "x" && $IGNORE
 	[[ $METAMODE != "core" ]] && make_and_enter ../../../../customimports.$METAMODE
 	make_and_enter ../fromwporg.$METAMODE
 	THE_PRISTINE_ZIP=""
-		
+
 	if [[ -s "$PRISTINE_FILENAME" ]]; then
 		# Sanity-check it
 		TMP_ZIPSIZE=`get_file_size "$PRISTINE_FILENAME"`
@@ -6289,7 +6312,7 @@ if [[ $FOUNDPLUG -eq 1 && ( ( $MODE = "normal" && $ROLLBACKTIME = "x" && $IGNORE
 						url_browser "https://wordpress.org/download"
 					fi
 				else
-					echo "Cancelled web browser: user declined" 
+					echo "Cancelled web browser: user declined"
 				fi
 			else
 				ws_event_error "Could not find a working w3m, elinks or lynx to use (run with --checkrequirements or --debug for more information)"
