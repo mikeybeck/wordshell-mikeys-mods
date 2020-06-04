@@ -87,10 +87,6 @@ MD5CHECKSUM_TRY="md5sum"
 WORKDIR="$HOME/.wordshell"
 CONFIGFILE="$WORKDIR/rc"
 
-#WORKDIR="/vagrant/.wordshell" #This makes Mikey's Wordshell installation work
-CONFIGFILE="$WORKDIR/rc"
-
-
 # Initial default number of threads for lftp to use when mirroring (some FTP servers will limit the maximum connections)
 # Can be over-ridden in the configuration file (e.g. --setconfig=ftpparallel:24) and on the command-line (--ftpparallel=<num>)
 FTPPARALLEL=9
