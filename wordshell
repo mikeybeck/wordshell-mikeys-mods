@@ -86,6 +86,7 @@ MD5CHECKSUM_TRY="md5sum"
 # config:key:value
 WORKDIR="$HOME/.wordshell"
 CONFIGFILE="$WORKDIR/rc"
+SCRIPTPATH="/home/mikey/code/wordshell-2/"
 
 # Initial default number of threads for lftp to use when mirroring (some FTP servers will limit the maximum connections)
 # Can be over-ridden in the configuration file (e.g. --setconfig=ftpparallel:24) and on the command-line (--ftpparallel=<num>)
@@ -102,19 +103,22 @@ EXCLUDE_GLOB_RSYNC="wponlinebackup/tmp/*"
 REMOTE_MANAGER_MINIMUM_PROTOCOL=22
 REMOTE_MANAGER_FROM="$WORKDIR/wp-wordshell-controller.php"
 
+
+
+
 SELINUX=0
 [[ $UNAME = "Linux" ]] && selinuxenabled 2>/dev/null && SELINUX=1
 
-source ws_sed_i.sh
+source "${SCRIPTPATH}ws_sed_i.sh"
 
-source setownership.sh
+source "${SCRIPTPATH}setownership.sh"
 
 # We want to know if date will accept the --date switch (GNU coreutils), or if we can use php to do the same; this unlocks functionality for parsing user-supplied dates
 CAN_STRTOTIME=0; GNU_DATE=0
 $DATE --version 2>/dev/null | grep -q GNU && GNU_DATE=1
 [[ $GNU_DATE -eq 1 || -n $PHP ]] && CAN_STRTOTIME=1
 
-source ws_str_date.sh
+source "${SCRIPTPATH}ws_str_date.sh"
 
 # The following is optional; it aims to obtain terminal codes to turn on and off bold output
 BOLD=""
@@ -139,9 +143,9 @@ DEFAULT_CONTENTDIR=wp-content
 WORDSHELL_PID=$$
 CONTENTDIR=$DEFAULT_CONTENTDIR
 
-source ws_callstack_logger.sh
+source "${SCRIPTPATH}ws_callstack_logger.sh"
 
-source ws_event_functions.sh
+source "${SCRIPTPATH}ws_event_functions.sh"
 
 if [ "$1" = "--help" -o "$1" = "-?" -o "$1" = "-h" ]; then
 
@@ -684,7 +688,7 @@ if [ ! -d "$WORKDIR" ]; then
 	fi
 fi
 
-source ws_cd_push_pop.sh
+source "${SCRIPTPATH}ws_cd_push_pop.sh"
 
 # Normalise the location of the configuration file, and make absolute (so it can be accessed from any part of the code)
 ws_pushd `dirname "$CONFIGFILE"`
@@ -979,7 +983,7 @@ REMOTEMANAGER_UPLOADTIME=0
 # Unset because it is consulted by mktemp
 unset TMPDIR
 
-source check_continue.sh
+source "${SCRIPTPATH}check_continue.sh"
 
 # Check reasonable free disk space. df -k -P is POSIX-compatible and has standardised output
 FREESPACE=`(df -k -P . 2>/dev/null || echo 0 0 0 0) | tail -1 | awk '{print $4}'`
@@ -995,7 +999,7 @@ fi
 ws_event_notice "Invoked: $ORIGINAL_PARAMS"
 [[ $DEBUG -ge 1 ]] && ws_event_debug "WordShell: $VERSION Uname: $UNAME"
 
-source reinvokeself.sh
+source "${SCRIPTPATH}reinvokeself.sh"
 
 DO_MULTIPLE_METAMODE=0
 [[ $METAMODE = "everything" || $METAMODE = "pluginsandthemes" ]] && DO_MULTIPLE_METAMODE=1
@@ -1175,11 +1179,11 @@ if [[ $METAMODE != "everything" && $METAMODE != "pluginsandthemes" ]]; then
 # End of the sanity checks that depend somehow upon the meta-mode
 fi
 
-source url_detectredirection.sh
+source "${SCRIPTPATH}url_detectredirection.sh"
 
-source url_get.sh
+source "${SCRIPTPATH}url_get.sh"
 
-source url_post.sh
+source "${SCRIPTPATH}url_post.sh"
 
 # Deal with --setconfig
 if [ -n "$SETCONFIG" ]; then
